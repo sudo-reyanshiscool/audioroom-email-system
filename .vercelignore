@@ -1,0 +1,5 @@
+# Deploy only the processed assets + preview; keep originals out of the deploy
+source/
+scripts/
+README.md
+.gitignore
