@@ -101,13 +101,22 @@ def main() -> None:
     bbox = img.getchannel("A").getbbox()
     if bbox is None:
         raise SystemExit("audioroom: image is fully transparent")
-    img = img.crop(bbox)
-    target_h = 58
-    target_w = max(2, 2 * round(img.width * target_h / img.height / 2))
-    img = img.resize((target_w, target_h), Image.LANCZOS)
+    trimmed = img.crop(bbox)
+
+    def scale_to(height: int) -> Image.Image:
+        width = max(2, 2 * round(trimmed.width * height / trimmed.height / 2))
+        return trimmed.resize((width, height), Image.LANCZOS)
+
+    img = scale_to(58)
     dst = OUT / f"audioroom-{VERSION}.png"
     img.save(dst, optimize=True)
     print(f"{dst.name}: {img.width}x{img.height}  (1x: {img.width // 2}x{img.height // 2}, colour untouched)")
+
+    # Landing-page mark: same crop, larger so it stays crisp on the site.
+    site = scale_to(128)
+    site_dst = ROOT / "logo.png"
+    site.save(site_dst, optimize=True)
+    print(f"{site_dst.name}: {site.width}x{site.height}  (1x: {site.width // 2}x{site.height // 2})")
 
 
 if __name__ == "__main__":
