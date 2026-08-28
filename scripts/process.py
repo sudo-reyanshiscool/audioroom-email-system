@@ -4,12 +4,11 @@
 Pipeline per logo: load -> RGBA -> white-key (only if no real alpha) ->
 recolour to #3A3A3A -> trim -> scale to target height -> save optimized.
 
-audioroom.png is copied through untouched: it is the primary mark and
-stays pure black at its authored size.
+audioroom.png is the primary mark: trimmed and scaled only, colour
+left pure black.
 """
 
 from pathlib import Path
-import shutil
 
 from PIL import Image
 
@@ -93,13 +92,22 @@ def main() -> None:
     for name, target_h in TARGETS.items():
         process(name, target_h)
 
+    # Primary mark: stays pure black, no recolour — only trim the padded
+    # canvas and scale to 2x of the 172x29-ish display size (height 58 at 1x 29).
     src = SOURCE / "audioroom.png"
     if not src.exists():
         raise SystemExit("missing source file: source/audioroom.png")
+    img = Image.open(src).convert("RGBA")
+    bbox = img.getchannel("A").getbbox()
+    if bbox is None:
+        raise SystemExit("audioroom: image is fully transparent")
+    img = img.crop(bbox)
+    target_h = 58
+    target_w = max(2, 2 * round(img.width * target_h / img.height / 2))
+    img = img.resize((target_w, target_h), Image.LANCZOS)
     dst = OUT / f"audioroom-{VERSION}.png"
-    shutil.copyfile(src, dst)
-    with Image.open(dst) as img:
-        print(f"{dst.name}: {img.width}x{img.height}  (copied untouched)")
+    img.save(dst, optimize=True)
+    print(f"{dst.name}: {img.width}x{img.height}  (1x: {img.width // 2}x{img.height // 2}, colour untouched)")
 
 
 if __name__ == "__main__":
